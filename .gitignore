@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+build/
+dist/
+installer_output/
+*.spec.bak
+*.db
+*.db-journal
+auth.json
+.pytest_cache/
+.vscode/
+*.egg-info/

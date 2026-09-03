@@ -1,0 +1,30 @@
+[project]
+name = "orthophonie-app"
+version = "1.0.0"
+description = "Application desktop locale de gestion de dossiers patients orthophoniques"
+requires-python = ">=3.11"
+dependencies = [
+    "PySide6>=6.6,<6.8",
+    "SQLAlchemy>=2.0,<2.1",
+    "sqlcipher3>=0.6.2",
+    "argon2-cffi>=23.1",
+    "cryptography>=42.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pyinstaller>=6.3",
+    "pytest>=8.0",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["auth*", "db*", "services*", "ui*"]
+exclude = ["tests*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
