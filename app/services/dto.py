@@ -7,6 +7,14 @@ from datetime import date
 from db.model import StatutObjectif
 
 
+def compute_age(date_naissance: date, today: date | None = None) -> int:
+    today = today or date.today()
+    annees = today.year - date_naissance.year
+    if (today.month, today.day) < (date_naissance.month, date_naissance.day):
+        annees -= 1
+    return annees
+
+
 @dataclass
 class PatientDTO:
     id: int
@@ -16,10 +24,19 @@ class PatientDTO:
     date_debut: date | None
     diagnostic: str | None
     frequence: str | None
+    classe: str | None = None
+    email_parent1: str | None = None
+    email_parent2: str | None = None
 
     @property
     def nom_complet(self) -> str:
         return f"{self.nom} {self.prenom}"
+
+    @property
+    def age_ans(self) -> int | None:
+        if self.date_naissance is None:
+            return None
+        return compute_age(self.date_naissance)
 
 
 @dataclass

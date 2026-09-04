@@ -18,13 +18,25 @@ def test_patient_crud():
         patient.id, nom="Dupont", prenom="Alicia",
         date_naissance=date(2010, 5, 1), date_debut=date(2023, 9, 1),
         diagnostic="Trouble du langage", frequence="1x/semaine",
+        classe="CE2", email_parent1="parent1@example.com", email_parent2="parent2@example.com",
     )
     reloaded = patient_service.get(patient.id)
     assert reloaded.prenom == "Alicia"
     assert reloaded.frequence == "1x/semaine"
+    assert reloaded.classe == "CE2"
+    assert reloaded.email_parent1 == "parent1@example.com"
+    assert reloaded.email_parent2 == "parent2@example.com"
 
     patient_service.delete(patient.id)
     assert patient_service.get(patient.id) is None
+
+
+def test_patient_age():
+    from services.dto import compute_age
+
+    assert compute_age(date(2015, 6, 15), today=date(2024, 6, 14)) == 8
+    assert compute_age(date(2015, 6, 15), today=date(2024, 6, 15)) == 9
+    assert compute_age(date(2015, 6, 15), today=date(2024, 6, 16)) == 9
 
 
 def test_equipe_pluri_annuaire_partage():

@@ -1,9 +1,10 @@
-"""QComboBox éditable avec complétion/recherche, utilisé pour le sélecteur de
-patients et les listes d'intervenants recherchables."""
+"""QComboBox éditable dont la liste déroulante se filtre en direct pendant la
+frappe (utilisé pour le sélecteur de patients et les listes recherchables)."""
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QCompleter, QComboBox, QWidget
+from PySide6.QtCore import QSortFilterProxyModel, Qt
+from PySide6.QtGui import QStandardItem, QStandardItemModel
+from PySide6.QtWidgets import QComboBox, QWidget
 
 
 class SearchableComboBox(QComboBox):
@@ -11,20 +12,43 @@ class SearchableComboBox(QComboBox):
         super().__init__(parent)
         self.setEditable(True)
         self.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
-        completer = QCompleter(self)
-        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
-        completer.setFilterMode(Qt.MatchFlag.MatchContains)
-        completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
-        self.setCompleter(completer)
+
+        self._source_model = QStandardItemModel(self)
+        self._proxy_model = QSortFilterProxyModel(self)
+        self._proxy_model.setSourceModel(self._source_model)
+        self._proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self._proxy_model.setFilterRole(Qt.ItemDataRole.DisplayRole)
+        self.setModel(self._proxy_model)
+
+        self.lineEdit().textEdited.connect(self._on_text_edited)
+        self.lineEdit().editingFinished.connect(self._clear_filter)
+        self.activated.connect(self._on_activated)
+
+    def _on_text_edited(self, text: str) -> None:
+        self._proxy_model.setFilterFixedString(text)
+        if not self.view().isVisible():
+            self.showPopup()
+
+    def _clear_filter(self) -> None:
+        if self._proxy_model.filterRegularExpression().pattern():
+            self._proxy_model.setFilterFixedString("")
+
+    def _on_activated(self, proxy_row: int) -> None:
+        data = self.itemData(proxy_row, Qt.ItemDataRole.UserRole)
+        self._clear_filter()
+        if data is not None:
+            self.set_current_data(data)
 
     def set_items(self, items: list[tuple[str, object]]) -> None:
         """items : liste de (label, data)."""
         current_data = self.current_data()
-        self.blockSignals(True)
-        self.clear()
+        self._clear_filter()
+        self._source_model.clear()
         for label, data in items:
-            self.addItem(label, data)
-        self.blockSignals(False)
+            item = QStandardItem(label)
+            item.setData(data, Qt.ItemDataRole.UserRole)
+            item.setEditable(False)
+            self._source_model.appendRow(item)
         if current_data is not None:
             self.set_current_data(current_data)
 

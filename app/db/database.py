@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
-from sqlalchemy import event
+from sqlalchemy import event, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -46,10 +46,32 @@ def init_engine(db_path: Path, key_hex: str, *, echo: bool = False) -> Engine:
         cursor.close()
 
     Base.metadata.create_all(engine)
+    _auto_migrate(engine)
 
     _engine = engine
     _SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
     return engine
+
+
+def _auto_migrate(engine: Engine) -> None:
+    """Ajoute les colonnes manquantes (ALTER TABLE ... ADD COLUMN) sur les
+    tables déjà existantes. Pas de framework de migration (Alembic) pour une
+    appli mono-poste — suffisant tant qu'on ne fait qu'ajouter des colonnes
+    nullable, ce qui couvre les évolutions de schéma jusqu'ici."""
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    with engine.begin() as conn:
+        for table in Base.metadata.sorted_tables:
+            if table.name not in existing_tables:
+                continue
+            existing_columns = {col["name"] for col in inspector.get_columns(table.name)}
+            for column in table.columns:
+                if column.name in existing_columns:
+                    continue
+                col_type = column.type.compile(engine.dialect)
+                conn.execute(
+                    text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {col_type}')
+                )
 
 
 def create_engine_from_creator(creator, *, echo: bool = False) -> Engine:

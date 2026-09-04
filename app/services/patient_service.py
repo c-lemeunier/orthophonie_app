@@ -17,6 +17,9 @@ def to_dto(patient: Patient) -> PatientDTO:
         date_debut=patient.date_debut,
         diagnostic=patient.diagnostic,
         frequence=patient.frequence,
+        classe=patient.classe,
+        email_parent1=patient.email_parent1,
+        email_parent2=patient.email_parent2,
     )
 
 
@@ -49,6 +52,9 @@ def update_infos(
     date_debut: date | None,
     diagnostic: str | None,
     frequence: str | None,
+    classe: str | None = None,
+    email_parent1: str | None = None,
+    email_parent2: str | None = None,
 ) -> PatientDTO:
     with session_scope() as session:
         patient = session.get(Patient, patient_id)
@@ -60,6 +66,9 @@ def update_infos(
         patient.date_debut = date_debut
         patient.diagnostic = diagnostic
         patient.frequence = frequence
+        patient.classe = classe
+        patient.email_parent1 = email_parent1
+        patient.email_parent2 = email_parent2
         session.flush()
         return to_dto(patient)
 

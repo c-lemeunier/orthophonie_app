@@ -39,6 +39,9 @@ class Patient(Base):
     date_debut: Mapped[date | None] = mapped_column(Date, nullable=True)
     diagnostic: Mapped[str | None] = mapped_column(Text, nullable=True)
     frequence: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    classe: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    email_parent1: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    email_parent2: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
