@@ -7,4 +7,4 @@ from ui.tabs.journal_tab_base import JournalTabBase
 
 class TabNotes(JournalTabBase):
     def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__("notes", "une note", parent, wrap_full_note=True)
+        super().__init__("notes", "une note", parent)

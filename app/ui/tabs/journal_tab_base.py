@@ -1,11 +1,9 @@
 """Widget générique (date, note) réutilisé par coordinations/bilans/notes.
 
-Deux modes d'affichage :
-- table (par défaut) : un tableau compact avec un aperçu (1re ligne) par entrée.
-- cartes (`wrap_full_note=True`) : chaque entrée est affichée intégralement,
-  texte complet et retour à la ligne, dans une liste déroulante de blocs —
-  plus robuste qu'un calcul manuel de hauteur de ligne de tableau (qui dépend
-  du moment où le widget est réellement affiché).
+Chaque entrée est affichée intégralement (texte complet, retour à la ligne)
+sur une carte, dans une liste défilant verticalement — la barre horizontale
+est désactivée pour forcer le contenu à tenir dans la largeur disponible,
+ce qui est ce qui permet au retour à la ligne de fonctionner.
 """
 from __future__ import annotations
 
@@ -13,7 +11,6 @@ from datetime import date
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QAbstractItemView,
     QDateEdit,
     QDialog,
     QDialogButtonBox,
@@ -22,8 +19,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
     QScrollArea,
-    QTableWidget,
-    QTableWidgetItem,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -33,9 +28,6 @@ from services import journal_service
 from services.dto import JournalEntryDTO
 from services.journal_service import JournalKind
 from ui.tabs.base_tab import PatientTabWidget
-
-_COL_DATE = 0
-_COL_APERCU = 1
 
 
 class _EntryFormDialog(QDialog):
@@ -103,21 +95,12 @@ class _EntryCard(QFrame):
 class JournalTabBase(PatientTabWidget):
     """kind : 'coordinations' | 'bilans' | 'notes'."""
 
-    def __init__(
-        self,
-        kind: JournalKind,
-        title_singulier: str,
-        parent: QWidget | None = None,
-        *,
-        wrap_full_note: bool = False,
-    ) -> None:
+    def __init__(self, kind: JournalKind, title_singulier: str, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._kind = kind
         self._title_singulier = title_singulier
-        self._wrap_full_note = wrap_full_note
         self._entries_cache: list[JournalEntryDTO] = []
         self._selected_entry_id: int | None = None
-        self._table: QTableWidget | None = None
         self._cards: list[_EntryCard] = []
 
         layout = QVBoxLayout(self)
@@ -126,10 +109,19 @@ class JournalTabBase(PatientTabWidget):
         if header is not None:
             layout.addWidget(header)
 
-        if self._wrap_full_note:
-            self._build_cards_view(layout)
-        else:
-            self._build_table_view(layout)
+        self._empty_label = QLabel("Aucune entrée enregistrée.")
+        self._empty_label.hide()
+        layout.addWidget(self._empty_label)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self._cards_container = QWidget()
+        self._cards_layout = QVBoxLayout(self._cards_container)
+        self._cards_layout.addStretch(1)
+        scroll_area.setWidget(self._cards_container)
+        layout.addWidget(scroll_area)
 
         buttons_row = QHBoxLayout()
         self._btn_add = QPushButton(f"Ajouter {self._title_singulier}")
@@ -145,56 +137,6 @@ class JournalTabBase(PatientTabWidget):
         layout.addLayout(buttons_row)
 
         self._set_buttons_enabled(False)
-
-    # ---- Vue tableau (coordinations, bilans) ----
-    def _build_table_view(self, layout: QVBoxLayout) -> None:
-        self._table = QTableWidget(0, 2)
-        self._table.setHorizontalHeaderLabels(["Date", "Note"])
-        self._table.horizontalHeader().setStretchLastSection(True)
-        self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self._table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-        self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self._table.itemSelectionChanged.connect(self._on_table_selection_changed)
-        layout.addWidget(self._table)
-
-    def _on_table_selection_changed(self) -> None:
-        row = self._table.currentRow()
-        if row < 0:
-            self._selected_entry_id = None
-        else:
-            self._selected_entry_id = self._table.item(row, _COL_DATE).data(Qt.ItemDataRole.UserRole)
-
-    def _render_table(self, entries: list[JournalEntryDTO]) -> None:
-        self._table.setRowCount(len(entries))
-        for row, entry in enumerate(entries):
-            date_item = QTableWidgetItem(entry.date.strftime("%d/%m/%Y"))
-            date_item.setData(Qt.ItemDataRole.UserRole, entry.id)
-            date_item.setFlags(date_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-            apercu = entry.note.splitlines()[0] if entry.note else ""
-            apercu_item = QTableWidgetItem(apercu)
-            apercu_item.setFlags(apercu_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-            self._table.setItem(row, _COL_DATE, date_item)
-            self._table.setItem(row, _COL_APERCU, apercu_item)
-
-    # ---- Vue cartes (notes) ----
-    def _build_cards_view(self, layout: QVBoxLayout) -> None:
-        self._empty_label = QLabel("Aucune entrée enregistrée.")
-        self._empty_label.hide()
-        layout.addWidget(self._empty_label)
-
-        # Barre de défilement verticale uniquement (pour lire les notes plus
-        # anciennes) — la barre horizontale est désactivée explicitement pour
-        # forcer le contenu à tenir dans la largeur disponible, ce qui est ce
-        # qui permet au retour à la ligne de fonctionner.
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self._cards_container = QWidget()
-        self._cards_layout = QVBoxLayout(self._cards_container)
-        self._cards_layout.addStretch(1)
-        scroll_area.setWidget(self._cards_container)
-        layout.addWidget(scroll_area)
 
     def _render_cards(self, entries: list[JournalEntryDTO]) -> None:
         for card in self._cards:
@@ -236,19 +178,13 @@ class JournalTabBase(PatientTabWidget):
         self._set_buttons_enabled(True)
         entries = journal_service.list_for_patient(self._kind, self.patient_id)
         self._entries_cache = entries
-        if self._wrap_full_note:
-            self._render_cards(entries)
-        else:
-            self._render_table(entries)
+        self._render_cards(entries)
         self._after_refresh(entries)
 
     def clear_view(self) -> None:
         self._entries_cache = []
         self._selected_entry_id = None
-        if self._wrap_full_note:
-            self._render_cards([])
-        else:
-            self._table.setRowCount(0)
+        self._render_cards([])
         self._set_buttons_enabled(False)
         self._after_refresh([])
 
