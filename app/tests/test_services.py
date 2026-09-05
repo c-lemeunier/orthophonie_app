@@ -9,6 +9,7 @@ from services import (
     patient_service,
     reunion_service,
     type_bilan_service,
+    type_reunion_service,
 )
 
 
@@ -112,22 +113,44 @@ def test_type_bilan_crud_et_bilan_avec_type_et_document():
 def test_reunion_participants_et_patients_concernes():
     patient = patient_service.create("E", "E")
     intervenant = intervenant_service.create_intervenant("Mme Petit", "Psychomotricienne")
+    type_synthese = type_reunion_service.create("Synthèse")
+    type_point_equipe = type_reunion_service.create("Point d'équipe")
 
     reunion = reunion_service.create(
-        date=date(2024, 6, 1), type_reunion="Synthèse", note="RAS",
+        date=date(2024, 6, 1), type_reunion_id=type_synthese.id, note="RAS",
         intervenant_ids=[intervenant.id], patient_ids=[patient.id],
     )
     assert reunion.participants[0].id == intervenant.id
     assert reunion.patients[0].id == patient.id
+    assert reunion.type_reunion.libelle == "Synthèse"
 
     all_reunions = reunion_service.list_all()
     assert len(all_reunions) == 1
 
     reunion_service.update(
-        reunion.id, date=date(2024, 6, 2), type_reunion="Point d'équipe", note=None,
+        reunion.id, date=date(2024, 6, 2), type_reunion_id=type_point_equipe.id, note=None,
         intervenant_ids=[], patient_ids=[patient.id],
     )
     updated = reunion_service.get(reunion.id)
-    assert updated.type_reunion == "Point d'équipe"
+    assert updated.type_reunion.libelle == "Point d'équipe"
     assert updated.participants == []
     assert len(updated.patients) == 1
+
+
+def test_type_reunion_crud_et_suppression_conserve_reunion():
+    patient = patient_service.create("G", "G")
+    type_reunion = type_reunion_service.create("Réunion de rentrée")
+    assert len(type_reunion_service.list_all()) == 1
+
+    reunion = reunion_service.create(
+        date=date(2024, 9, 1), type_reunion_id=type_reunion.id, note=None,
+        intervenant_ids=[], patient_ids=[patient.id],
+    )
+
+    type_reunion_service.update(type_reunion.id, "Réunion de rentrée (renommée)")
+    reloaded = reunion_service.get(reunion.id)
+    assert reloaded.type_reunion.libelle == "Réunion de rentrée (renommée)"
+
+    type_reunion_service.delete(type_reunion.id)
+    reloaded = reunion_service.get(reunion.id)
+    assert reloaded.type_reunion is None  # la réunion existe toujours, juste sans type

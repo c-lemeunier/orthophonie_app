@@ -21,11 +21,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from db.seed import SUGGESTIONS_TYPE_REUNION
-from services import intervenant_service, patient_service
+from services import intervenant_service, patient_service, type_reunion_service
 from services.dto import ReunionDTO
 from ui import theme
 from ui.intervenant_form_dialog import IntervenantCreateDialog
+from ui.type_reunion_dialog import TypeReunionManagerDialog
 from ui.widgets.searchable_combo_box import SearchableComboBox
 
 
@@ -44,12 +44,14 @@ class ReunionFormDialog(QDialog):
         self._date_edit.setDate(reunion.date if reunion else date.today())
         form.addRow("Date :", self._date_edit)
 
+        type_row = QHBoxLayout()
         self._type_combo = SearchableComboBox()
-        self._type_combo.set_items([(t, t) for t in SUGGESTIONS_TYPE_REUNION])
-        self._type_combo.setEditable(True)
-        if reunion:
-            self._type_combo.setCurrentText(reunion.type_reunion)
-        form.addRow("Type de réunion :", self._type_combo)
+        btn_manage_types = QPushButton("Gérer les types…")
+        btn_manage_types.clicked.connect(self._on_manage_types)
+        type_row.addWidget(self._type_combo, stretch=1)
+        type_row.addWidget(btn_manage_types)
+        form.addRow("Type de réunion :", type_row)
+        self._reload_types(selected_id=reunion.type_reunion.id if reunion and reunion.type_reunion else None)
 
         layout.addLayout(form)
 
@@ -127,6 +129,18 @@ class ReunionFormDialog(QDialog):
             selected_ids=selected_ids,
         )
 
+    def _reload_types(self, selected_id: int | None) -> None:
+        types = type_reunion_service.list_all()
+        items = [("(Aucun type)", None)] + [(t.libelle, t.id) for t in types]
+        self._type_combo.set_items(items)
+        if selected_id is not None:
+            self._type_combo.set_current_data(selected_id)
+
+    def _on_manage_types(self) -> None:
+        current = self._type_combo.current_data()
+        TypeReunionManagerDialog(self).exec()
+        self._reload_types(selected_id=current)
+
     def _on_new_intervenant(self) -> None:
         dialog = IntervenantCreateDialog(self)
         if dialog.exec() == QDialog.DialogCode.Accepted and dialog.result_intervenant is not None:
@@ -138,7 +152,7 @@ class ReunionFormDialog(QDialog):
             self._reload_participants(selected_ids)
 
     def _on_accept(self) -> None:
-        if not self._type_combo.currentText().strip():
+        if self._type_combo.current_data() is None:
             QMessageBox.warning(self, "Champ requis", "Le type de réunion est obligatoire.")
             return
         self.accept()
@@ -146,7 +160,7 @@ class ReunionFormDialog(QDialog):
     def values(self) -> dict:
         return {
             "date": self._date_edit.date().toPython(),
-            "type_reunion": self._type_combo.currentText().strip(),
+            "type_reunion_id": self._type_combo.current_data(),
             "note": self._note_edit.toPlainText().strip() or None,
             "intervenant_ids": self._checked_ids(self._participants_list),
             "patient_ids": self._checked_ids(self._patients_list),

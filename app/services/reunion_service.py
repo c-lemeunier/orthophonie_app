@@ -8,13 +8,14 @@ from db.model import Reunion, ReunionIntervenant, ReunionPatient
 from services.dto import ReunionDTO
 from services.intervenant_service import to_dto as intervenant_to_dto
 from services.patient_service import to_dto as patient_to_dto
+from services.type_reunion_service import to_dto as type_reunion_to_dto
 
 
 def _to_dto(reunion: Reunion) -> ReunionDTO:
     return ReunionDTO(
         id=reunion.id,
         date=reunion.date,
-        type_reunion=reunion.type_reunion,
+        type_reunion=type_reunion_to_dto(reunion.type_reunion) if reunion.type_reunion_id else None,
         note=reunion.note,
         participants=[intervenant_to_dto(l.intervenant) for l in reunion.intervenants_links],
         patients=[patient_to_dto(l.patient) for l in reunion.patients_links],
@@ -36,13 +37,13 @@ def get(reunion_id: int) -> ReunionDTO | None:
 def create(
     *,
     date: date_type,
-    type_reunion: str,
+    type_reunion_id: int | None,
     note: str | None,
     intervenant_ids: list[int],
     patient_ids: list[int],
 ) -> ReunionDTO:
     with session_scope() as session:
-        reunion = Reunion(date=date, type_reunion=type_reunion.strip(), note=note)
+        reunion = Reunion(date=date, type_reunion_id=type_reunion_id, note=note)
         session.add(reunion)
         session.flush()
         _sync_links(session, reunion, intervenant_ids, patient_ids)
@@ -54,7 +55,7 @@ def update(
     reunion_id: int,
     *,
     date: date_type,
-    type_reunion: str,
+    type_reunion_id: int | None,
     note: str | None,
     intervenant_ids: list[int],
     patient_ids: list[int],
@@ -64,7 +65,7 @@ def update(
         if reunion is None:
             raise ValueError(f"Réunion {reunion_id} introuvable")
         reunion.date = date
-        reunion.type_reunion = type_reunion.strip()
+        reunion.type_reunion_id = type_reunion_id
         reunion.note = note
         for lien in list(reunion.intervenants_links):
             session.delete(lien)

@@ -47,6 +47,7 @@ def init_engine(db_path: Path, key_hex: str, *, echo: bool = False) -> Engine:
 
     Base.metadata.create_all(engine)
     _auto_migrate(engine)
+    _migrate_reunion_types(engine)
 
     _engine = engine
     _SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
@@ -72,6 +73,55 @@ def _auto_migrate(engine: Engine) -> None:
                 conn.execute(
                     text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {col_type}')
                 )
+
+
+def _migrate_reunion_types(engine: Engine) -> None:
+    """Convertit les anciennes valeurs `reunions.type_reunion` (texte libre)
+    en entrées de l'annuaire `type_reunions`, pour les bases créées avant
+    l'introduction de cet annuaire géré. Idempotent : ne touche que les
+    réunions dont `type_reunion_id` est encore NULL."""
+    inspector = inspect(engine)
+    if "reunions" not in inspector.get_table_names():
+        return
+    columns = {col["name"] for col in inspector.get_columns("reunions")}
+    if "type_reunion" not in columns or "type_reunion_id" not in columns:
+        return
+
+    with engine.begin() as conn:
+        rows = conn.execute(
+            text(
+                "SELECT id, type_reunion FROM reunions "
+                "WHERE type_reunion_id IS NULL AND type_reunion IS NOT NULL AND type_reunion != ''"
+            )
+        ).all()
+        if not rows:
+            return
+
+        cache: dict[str, int] = {}
+        for row in rows:
+            libelle = row.type_reunion.strip()
+            if not libelle:
+                continue
+            if libelle not in cache:
+                existing = conn.execute(
+                    text("SELECT id FROM type_reunions WHERE libelle = :libelle"),
+                    {"libelle": libelle},
+                ).first()
+                if existing:
+                    cache[libelle] = existing.id
+                else:
+                    result = conn.execute(
+                        text(
+                            "INSERT INTO type_reunions (libelle, created_at) "
+                            "VALUES (:libelle, CURRENT_TIMESTAMP)"
+                        ),
+                        {"libelle": libelle},
+                    )
+                    cache[libelle] = result.lastrowid
+            conn.execute(
+                text("UPDATE reunions SET type_reunion_id = :tid WHERE id = :rid"),
+                {"tid": cache[libelle], "rid": row.id},
+            )
 
 
 def create_engine_from_creator(creator, *, echo: bool = False) -> Engine:

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-SUGGESTIONS_TYPE_REUNION = [
+DEFAULT_TYPES_REUNION = [
     "Synthèse",
     "Réunion de coordination",
     "Réunion de rentrée",
@@ -24,7 +24,11 @@ SUGGESTIONS_FREQUENCE = [
 
 
 def seed_default_data(session: Session) -> None:
-    """Point d'extension pour des données par défaut futures (aucune table de
-    référence à peupler en v1 : les intervenants et types de réunion sont
-    propres à chaque praticien et saisis librement)."""
-    return None
+    """Types de réunion par défaut, uniquement si l'annuaire est encore vide
+    (ni déjà peuplé par l'utilisateur, ni par la migration des anciennes
+    valeurs texte libre — voir db/database.py::_migrate_reunion_types)."""
+    from db.model import TypeReunion
+
+    if session.query(TypeReunion).count() == 0:
+        for libelle in DEFAULT_TYPES_REUNION:
+            session.add(TypeReunion(libelle=libelle))

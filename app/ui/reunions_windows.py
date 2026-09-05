@@ -73,7 +73,7 @@ class ReunionTableModel(QAbstractTableModel):
         if col == _COL_DATE:
             return reunion.date.strftime("%d/%m/%Y")
         if col == _COL_TYPE:
-            return reunion.type_reunion
+            return reunion.type_reunion.libelle if reunion.type_reunion else ""
         if col == _COL_PARTICIPANTS:
             return "\n".join(p.libelle for p in reunion.participants)
         if col == _COL_PATIENTS:
@@ -214,9 +214,10 @@ class ReunionsWindow(QMainWindow):
         reunion = self._selected_reunion()
         if reunion is None:
             return
+        type_label = reunion.type_reunion.libelle if reunion.type_reunion else "sans type"
         reponse = QMessageBox.question(
             self, "Confirmer la suppression",
-            f"Supprimer la réunion du {reunion.date.strftime('%d/%m/%Y')} ({reunion.type_reunion}) ?",
+            f"Supprimer la réunion du {reunion.date.strftime('%d/%m/%Y')} ({type_label}) ?",
         )
         if reponse == QMessageBox.StandardButton.Yes:
             reunion_service.delete(reunion.id)

@@ -223,15 +223,34 @@ class Note(_DatedNoteMixin, Base):
     patient: Mapped["Patient"] = relationship(back_populates="notes")
 
 
+class TypeReunion(Base):
+    """Annuaire des types de réunion, géré par l'utilisateur (recherche,
+    ajout, modification, suppression) — propre aux réunions."""
+
+    __tablename__ = "type_reunions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    libelle: Mapped[str] = mapped_column(String(150), nullable=False, unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    reunions: Mapped[list["Reunion"]] = relationship(back_populates="type_reunion")
+
+
 class Reunion(Base):
     __tablename__ = "reunions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     date: Mapped[date] = mapped_column(Date, nullable=False)
-    type_reunion: Mapped[str] = mapped_column(String(150), nullable=False)
+    # Ancienne colonne texte libre, conservée (non utilisée par l'ORM) pour la
+    # migration des données existantes vers `type_reunion_id` — voir
+    # db/database.py::_migrate_reunion_types.
+    type_reunion_id: Mapped[int | None] = mapped_column(
+        ForeignKey("type_reunions.id", ondelete="SET NULL"), nullable=True
+    )
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
+    type_reunion: Mapped["TypeReunion | None"] = relationship(back_populates="reunions")
     intervenants_links: Mapped[list["ReunionIntervenant"]] = relationship(
         back_populates="reunion", cascade="all, delete-orphan"
     )

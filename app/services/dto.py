@@ -102,10 +102,16 @@ class BilanDTO:
 
 
 @dataclass
+class TypeReunionDTO:
+    id: int
+    libelle: str
+
+
+@dataclass
 class ReunionDTO:
     id: int
     date: date
-    type_reunion: str
+    type_reunion: TypeReunionDTO | None
     note: str | None
     participants: list[IntervenantDTO] = field(default_factory=list)
     patients: list[PatientDTO] = field(default_factory=list)
