@@ -1,6 +1,7 @@
 """Fenêtre principale : sélection du patient + 6 onglets."""
 from __future__ import annotations
 
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
@@ -13,6 +14,7 @@ from PySide6.QtWidgets import (
 )
 
 from services import patient_service
+from ui import theme
 from ui.patient_window import PatientFormDialog
 from ui.reunions_windows import ReunionsWindow
 from ui.tabs.base_tab import PatientTabWidget
@@ -47,10 +49,12 @@ class MainWindow(QMainWindow):
 
         btn_add = QPushButton("Ajouter patient")
         btn_add.clicked.connect(self._on_add_patient)
+        theme.tag_button(btn_add, "add")
         top_row.addWidget(btn_add)
 
         btn_delete = QPushButton("Supprimer patient")
         btn_delete.clicked.connect(self._on_delete_patient)
+        theme.tag_button(btn_delete, "delete")
         top_row.addWidget(btn_delete)
 
         btn_reunions = QPushButton("Réunions équipe / synthèses")
@@ -84,6 +88,13 @@ class MainWindow(QMainWindow):
         self._tabs.addTab(self._tab_bilans, "Derniers bilans")
         self._tabs.addTab(self._tab_notes, "Notes")
         layout.addWidget(self._tabs)
+
+        # Couleur du libellé de chaque onglet = sa couleur d'accent, en plus
+        # du liseré appliqué sur chaque page (theme.apply_tab_accent).
+        for index, accent_key in enumerate(
+            ["infos", "equipe", "objectifs", "coordinations", "bilans", "notes"]
+        ):
+            self._tabs.tabBar().setTabTextColor(index, QColor(theme.TAB_ACCENTS[accent_key]))
 
         self._reload_patients()
 

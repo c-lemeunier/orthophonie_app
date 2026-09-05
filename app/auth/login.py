@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 )
 
 from auth import auth_service
+from ui import theme
 
 _LOCKOUT_BASE_SECONDS = 2
 
@@ -32,6 +33,7 @@ class LoginDialog(QDialog):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName(theme.LOGIN_DIALOG_OBJECT_NAME)
         self.setWindowTitle("Orthophonie — Connexion")
         self.setModal(True)
         self.setMinimumWidth(420)

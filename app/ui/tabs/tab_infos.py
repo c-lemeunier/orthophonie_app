@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 from db.seed import SUGGESTIONS_FREQUENCE
 from services import patient_service
 from services.dto import compute_age
+from ui import theme
 from ui.tabs.base_tab import PatientTabWidget
 from ui.widgets.searchable_combo_box import SearchableComboBox
 
@@ -32,6 +33,7 @@ class TabInfos(PatientTabWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        theme.apply_tab_accent(self, "infos")
 
         layout = QVBoxLayout(self)
         form = QFormLayout()
@@ -44,6 +46,7 @@ class TabInfos(PatientTabWidget):
         self._date_naissance.setDate(date(2000, 1, 1))
         self._date_naissance.dateChanged.connect(self._on_date_naissance_changed)
         self._age_label = QLabel()
+        self._age_label.setStyleSheet(f"font-weight: bold; color: {theme.TAB_ACCENTS['infos']};")
         self._date_debut = QDateEdit()
         self._date_debut.setCalendarPopup(True)
         self._date_debut.setDisplayFormat("dd/MM/yyyy")
@@ -70,6 +73,7 @@ class TabInfos(PatientTabWidget):
 
         self._btn_save = QPushButton("Enregistrer")
         self._btn_save.clicked.connect(self._on_save)
+        theme.tag_button(self._btn_save, "edit")
         layout.addWidget(self._btn_save)
         layout.addStretch(1)
 

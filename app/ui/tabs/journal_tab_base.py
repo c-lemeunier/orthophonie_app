@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
 from services import journal_service
 from services.dto import JournalEntryDTO
 from services.journal_service import JournalKind
+from ui import theme
 from ui.tabs.base_tab import PatientTabWidget
 
 
@@ -59,22 +60,21 @@ class _EntryFormDialog(QDialog):
 
 
 class _EntryCard(QFrame):
-    """Bloc affichant une entrée en entier (date + note complète, wrap)."""
+    """Bloc affichant une entrée en entier (date + note complète, wrap). Le
+    liseré gauche reprend la couleur d'accent de l'onglet."""
 
     clicked = Signal(int)
 
-    _STYLE_NORMAL = "_EntryCard { border: 1px solid palette(mid); border-radius: 4px; }"
-    _STYLE_SELECTED = "_EntryCard { border: 2px solid palette(highlight); border-radius: 4px; }"
-
-    def __init__(self, entry: JournalEntryDTO, parent: QWidget | None = None) -> None:
+    def __init__(self, entry: JournalEntryDTO, accent_color: str, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.entry_id = entry.id
+        self._accent_color = accent_color
         self.setFrameShape(QFrame.Shape.StyledPanel)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
         layout = QVBoxLayout(self)
         date_label = QLabel(entry.date.strftime("%d/%m/%Y"))
-        date_label.setStyleSheet("font-weight: bold;")
+        date_label.setStyleSheet(f"font-weight: bold; color: {accent_color};")
         layout.addWidget(date_label)
 
         note_label = QLabel(entry.note)
@@ -85,7 +85,12 @@ class _EntryCard(QFrame):
         self.set_selected(False)
 
     def set_selected(self, selected: bool) -> None:
-        self.setStyleSheet(self._STYLE_SELECTED if selected else self._STYLE_NORMAL)
+        border_width = 2 if selected else 1
+        self.setStyleSheet(
+            f"_EntryCard {{ border: 1px solid {theme.BORDER}; "
+            f"border-left: {border_width + 2}px solid {self._accent_color}; "
+            f"border-radius: 4px; background-color: {theme.CREAM}; }}"
+        )
 
     def mousePressEvent(self, event) -> None:  # noqa: N802
         self.clicked.emit(self.entry_id)
@@ -95,13 +100,18 @@ class _EntryCard(QFrame):
 class JournalTabBase(PatientTabWidget):
     """kind : 'coordinations' | 'bilans' | 'notes'."""
 
-    def __init__(self, kind: JournalKind, title_singulier: str, parent: QWidget | None = None) -> None:
+    def __init__(
+        self, kind: JournalKind, title_singulier: str, accent_key: str, parent: QWidget | None = None
+    ) -> None:
         super().__init__(parent)
         self._kind = kind
         self._title_singulier = title_singulier
+        self._accent_color = theme.TAB_ACCENTS[accent_key]
         self._entries_cache: list[JournalEntryDTO] = []
         self._selected_entry_id: int | None = None
         self._cards: list[_EntryCard] = []
+
+        theme.apply_tab_accent(self, accent_key)
 
         layout = QVBoxLayout(self)
 
@@ -117,7 +127,11 @@ class JournalTabBase(PatientTabWidget):
         scroll_area.setWidgetResizable(True)
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        # Le viewport interne de la scroll area a sa propre palette et
+        # n'hérite pas automatiquement du fond du thème via le QSS global.
+        scroll_area.setStyleSheet(f"QScrollArea {{ background-color: {theme.CREAM}; border: none; }}")
         self._cards_container = QWidget()
+        self._cards_container.setStyleSheet(f"background-color: {theme.CREAM};")
         self._cards_layout = QVBoxLayout(self._cards_container)
         self._cards_layout.addStretch(1)
         scroll_area.setWidget(self._cards_container)
@@ -126,10 +140,13 @@ class JournalTabBase(PatientTabWidget):
         buttons_row = QHBoxLayout()
         self._btn_add = QPushButton(f"Ajouter {self._title_singulier}")
         self._btn_add.clicked.connect(self._on_add)
+        theme.tag_button(self._btn_add, "add")
         self._btn_edit = QPushButton("Modifier")
         self._btn_edit.clicked.connect(self._on_edit)
+        theme.tag_button(self._btn_edit, "edit")
         self._btn_delete = QPushButton("Supprimer")
         self._btn_delete.clicked.connect(self._on_delete)
+        theme.tag_button(self._btn_delete, "delete")
         buttons_row.addWidget(self._btn_add)
         buttons_row.addWidget(self._btn_edit)
         buttons_row.addWidget(self._btn_delete)
@@ -151,7 +168,7 @@ class JournalTabBase(PatientTabWidget):
             self._selected_entry_id = None
 
         for entry in entries:
-            card = _EntryCard(entry)
+            card = _EntryCard(entry, self._accent_color)
             card.clicked.connect(self._on_card_clicked)
             card.set_selected(entry.id == self._selected_entry_id)
             self._cards_layout.insertWidget(self._cards_layout.count() - 1, card)

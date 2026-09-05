@@ -13,11 +13,13 @@ from PySide6.QtWidgets import QApplication
 from auth import auth_service
 from auth.login import LoginDialog
 from db import database, seed
+from ui.theme import STYLESHEET
 
 
 def main() -> int:
     app = QApplication(sys.argv)
     app.setApplicationName("OrthophonieApp")
+    app.setStyleSheet(STYLESHEET)
 
     login_dialog = LoginDialog()
     if login_dialog.exec() != LoginDialog.DialogCode.Accepted or login_dialog.dek is None:

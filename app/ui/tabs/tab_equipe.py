@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 from services import intervenant_service
+from ui import theme
 from ui.intervenant_form_dialog import IntervenantPickerDialog
 from ui.tabs.base_tab import PatientTabWidget
 
@@ -22,6 +23,7 @@ _COL_NOM = 1
 class TabEquipe(PatientTabWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        theme.apply_tab_accent(self, "equipe")
 
         layout = QVBoxLayout(self)
         self._table = QTableWidget(0, 2)
@@ -30,13 +32,16 @@ class TabEquipe(PatientTabWidget):
         self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._table.horizontalHeader().setStyleSheet(theme.header_style("equipe"))
         layout.addWidget(self._table)
 
         buttons_row = QHBoxLayout()
         self._btn_add = QPushButton("Ajouter")
         self._btn_add.clicked.connect(self._on_add)
+        theme.tag_button(self._btn_add, "add")
         self._btn_remove = QPushButton("Supprimer")
         self._btn_remove.clicked.connect(self._on_remove)
+        theme.tag_button(self._btn_remove, "delete")
         buttons_row.addWidget(self._btn_add)
         buttons_row.addWidget(self._btn_remove)
         buttons_row.addStretch(1)

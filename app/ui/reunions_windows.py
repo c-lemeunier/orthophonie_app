@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
 
 from services import reunion_service
 from services.dto import ReunionDTO
+from ui import theme
 from ui.intervenant_form_dialog import IntervenantCreateDialog
 from ui.reunion_form_dialog import ReunionFormDialog
 
@@ -163,12 +164,16 @@ class ReunionsWindow(QMainWindow):
         buttons_row = QHBoxLayout()
         btn_add = QPushButton("Ajouter une réunion")
         btn_add.clicked.connect(self._on_add)
+        theme.tag_button(btn_add, "add")
         btn_edit = QPushButton("Modifier")
         btn_edit.clicked.connect(self._on_edit)
+        theme.tag_button(btn_edit, "edit")
         btn_delete = QPushButton("Supprimer")
         btn_delete.clicked.connect(self._on_delete)
+        theme.tag_button(btn_delete, "delete")
         btn_new_intervenant = QPushButton("Nouvel intervenant")
         btn_new_intervenant.clicked.connect(self._on_new_intervenant)
+        theme.tag_button(btn_new_intervenant, "add")
         buttons_row.addWidget(btn_add)
         buttons_row.addWidget(btn_edit)
         buttons_row.addWidget(btn_delete)

@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 )
 
 from services import objectifs_service
+from ui import theme
 from ui.objectif_form_dialog import ObjectifFormDialog
 from ui.style_constants import STATUT_LABELS, statut_icon
 from ui.tabs.base_tab import PatientTabWidget
@@ -27,22 +28,28 @@ _KIND_PETIT = "petit"
 class TabObjectifs(PatientTabWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        theme.apply_tab_accent(self, "objectifs")
 
         layout = QVBoxLayout(self)
         self._tree = QTreeWidget()
         self._tree.setHeaderLabels(["Objectif", "Statut"])
         self._tree.setColumnWidth(0, 400)
+        self._tree.header().setStyleSheet(theme.header_style("objectifs"))
         layout.addWidget(self._tree)
 
         buttons_row = QHBoxLayout()
         self._btn_add_grand = QPushButton("Ajouter grand objectif")
         self._btn_add_grand.clicked.connect(self._on_add_grand)
+        theme.tag_button(self._btn_add_grand, "add")
         self._btn_add_petit = QPushButton("Ajouter petit objectif")
         self._btn_add_petit.clicked.connect(self._on_add_petit)
+        theme.tag_button(self._btn_add_petit, "add")
         self._btn_edit = QPushButton("Modifier")
         self._btn_edit.clicked.connect(self._on_edit)
+        theme.tag_button(self._btn_edit, "edit")
         self._btn_delete = QPushButton("Supprimer")
         self._btn_delete.clicked.connect(self._on_delete)
+        theme.tag_button(self._btn_delete, "delete")
         buttons_row.addWidget(self._btn_add_grand)
         buttons_row.addWidget(self._btn_add_petit)
         buttons_row.addWidget(self._btn_edit)

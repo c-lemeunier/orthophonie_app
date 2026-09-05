@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 
 from services import intervenant_service
 from services.dto import IntervenantDTO
+from ui import theme
 from ui.widgets.searchable_combo_box import SearchableComboBox
 
 
@@ -39,6 +40,7 @@ class IntervenantCreateDialog(QDialog):
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
+        theme.tag_button(buttons.button(QDialogButtonBox.StandardButton.Ok), "add")
         buttons.accepted.connect(self._on_accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -81,6 +83,7 @@ class IntervenantPickerDialog(QDialog):
 
         new_button = QDialogButtonBox()
         new_btn = new_button.addButton("Nouvel intervenant…", QDialogButtonBox.ButtonRole.ActionRole)
+        theme.tag_button(new_btn, "add")
         new_btn.clicked.connect(lambda: self._stack.setCurrentWidget(self._create_page))
         layout.addWidget(new_button)
 
@@ -105,6 +108,7 @@ class IntervenantPickerDialog(QDialog):
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
+        theme.tag_button(buttons.button(QDialogButtonBox.StandardButton.Ok), "add")
         buttons.accepted.connect(self._on_create_accept)
         buttons.rejected.connect(lambda: self._stack.setCurrentWidget(self._pick_page))
         layout.addWidget(buttons)

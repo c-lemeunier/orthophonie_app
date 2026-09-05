@@ -17,11 +17,11 @@ def _add_one_year(d: date) -> date:
 
 class TabBilans(JournalTabBase):
     def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__("bilans", "un bilan", parent)
+        super().__init__("bilans", "un bilan", "bilans", parent)
 
     def _create_header_widget(self) -> QWidget:
         self._prochain_bilan_label = QLabel()
-        self._prochain_bilan_label.setStyleSheet("font-weight: bold;")
+        self._prochain_bilan_label.setStyleSheet(f"font-weight: bold; color: {self._accent_color};")
         return self._prochain_bilan_label
 
     def _after_refresh(self, entries: list) -> None:
