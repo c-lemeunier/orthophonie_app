@@ -9,6 +9,7 @@ from PySide6.QtCore import (
     QModelIndex,
     QSortFilterProxyModel,
     Qt,
+    QTimer,
 )
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -74,11 +75,11 @@ class ReunionTableModel(QAbstractTableModel):
         if col == _COL_TYPE:
             return reunion.type_reunion
         if col == _COL_PARTICIPANTS:
-            return ", ".join(p.libelle for p in reunion.participants)
+            return "\n".join(p.libelle for p in reunion.participants)
         if col == _COL_PATIENTS:
-            return ", ".join(p.nom_complet for p in reunion.patients)
+            return "\n".join(p.nom_complet for p in reunion.patients)
         if col == _COL_NOTE:
-            return (reunion.note or "").splitlines()[0] if reunion.note else ""
+            return reunion.note or ""
         return None
 
 
@@ -139,7 +140,21 @@ class ReunionsWindow(QMainWindow):
         self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self._table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self._table.setWordWrap(True)
+
+        header = self._table.horizontalHeader()
+        # Date et Type : juste la place nécessaire à leur contenu, pas plus.
+        header.setSectionResizeMode(_COL_DATE, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(_COL_TYPE, QHeaderView.ResizeMode.ResizeToContents)
+        # Participants / Patients / Note se partagent le reste de la largeur.
+        header.setSectionResizeMode(_COL_PARTICIPANTS, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(_COL_PATIENTS, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(_COL_NOTE, QHeaderView.ResizeMode.Stretch)
+        # Le retour à la ligne dépend de la largeur des colonnes : recalculer
+        # la hauteur des lignes à chaque redimensionnement d'une colonne (donc
+        # aussi à chaque redimensionnement de la fenêtre, via Stretch).
+        header.sectionResized.connect(lambda *_: self._table.resizeRowsToContents())
+
         self._table.doubleClicked.connect(lambda _: self._on_edit())
         layout.addWidget(self._table)
 
@@ -166,6 +181,10 @@ class ReunionsWindow(QMainWindow):
 
     def refresh(self) -> None:
         self._model.set_reunions(reunion_service.list_all())
+        # Différé : juste après le peuplement, les largeurs de colonnes issues
+        # de ResizeToContents/Stretch ne sont pas encore définitives tant que
+        # la fenêtre n'a pas terminé sa mise en page.
+        QTimer.singleShot(0, self._table.resizeRowsToContents)
 
     def _selected_reunion(self) -> ReunionDTO | None:
         indexes = self._table.selectionModel().selectedRows()
