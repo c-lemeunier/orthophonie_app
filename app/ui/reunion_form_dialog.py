@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QMessageBox,
+    QPushButton,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -23,6 +24,8 @@ from PySide6.QtWidgets import (
 from db.seed import SUGGESTIONS_TYPE_REUNION
 from services import intervenant_service, patient_service
 from services.dto import ReunionDTO
+from ui import theme
+from ui.intervenant_form_dialog import IntervenantCreateDialog
 from ui.widgets.searchable_combo_box import SearchableComboBox
 
 
@@ -53,12 +56,18 @@ class ReunionFormDialog(QDialog):
         lists_row = QHBoxLayout()
 
         participants_col = QVBoxLayout()
-        participants_col.addWidget(QLabel("Participants :"))
+        participants_header = QHBoxLayout()
+        participants_header.addWidget(QLabel("Participants :"))
+        participants_header.addStretch(1)
+        btn_new_intervenant = QPushButton("+ Nouvel intervenant")
+        btn_new_intervenant.clicked.connect(self._on_new_intervenant)
+        theme.tag_button(btn_new_intervenant, "add")
+        participants_header.addWidget(btn_new_intervenant)
+        participants_col.addLayout(participants_header)
+
         self._participants_list = QListWidget()
-        self._fill_checkable_list(
-            self._participants_list,
-            [(i.libelle, i.id) for i in intervenant_service.list_annuaire()],
-            selected_ids={p.id for p in reunion.participants} if reunion else set(),
+        self._reload_participants(
+            selected_ids={p.id for p in reunion.participants} if reunion else set()
         )
         participants_col.addWidget(self._participants_list)
         lists_row.addLayout(participants_col)
@@ -109,6 +118,24 @@ class ReunionFormDialog(QDialog):
             if item.checkState() == Qt.CheckState.Checked:
                 ids.append(item.data(Qt.ItemDataRole.UserRole))
         return ids
+
+    def _reload_participants(self, selected_ids: set[int]) -> None:
+        self._participants_list.clear()
+        self._fill_checkable_list(
+            self._participants_list,
+            [(i.libelle, i.id) for i in intervenant_service.list_annuaire()],
+            selected_ids=selected_ids,
+        )
+
+    def _on_new_intervenant(self) -> None:
+        dialog = IntervenantCreateDialog(self)
+        if dialog.exec() == QDialog.DialogCode.Accepted and dialog.result_intervenant is not None:
+            # On garde les cases déjà cochées, et on coche directement le
+            # nouvel intervenant : c'est pour l'ajouter à cette réunion qu'on
+            # vient de le créer.
+            selected_ids = set(self._checked_ids(self._participants_list))
+            selected_ids.add(dialog.result_intervenant.id)
+            self._reload_participants(selected_ids)
 
     def _on_accept(self) -> None:
         if not self._type_combo.currentText().strip():

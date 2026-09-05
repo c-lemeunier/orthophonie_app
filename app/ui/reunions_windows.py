@@ -28,7 +28,6 @@ from PySide6.QtWidgets import (
 from services import reunion_service
 from services.dto import ReunionDTO
 from ui import theme
-from ui.intervenant_form_dialog import IntervenantCreateDialog
 from ui.reunion_form_dialog import ReunionFormDialog
 
 _HEADERS = ["Date", "Type", "Participants", "Patients concernés", "Note"]
@@ -171,13 +170,9 @@ class ReunionsWindow(QMainWindow):
         btn_delete = QPushButton("Supprimer")
         btn_delete.clicked.connect(self._on_delete)
         theme.tag_button(btn_delete, "delete")
-        btn_new_intervenant = QPushButton("Nouvel intervenant")
-        btn_new_intervenant.clicked.connect(self._on_new_intervenant)
-        theme.tag_button(btn_new_intervenant, "add")
         buttons_row.addWidget(btn_add)
         buttons_row.addWidget(btn_edit)
         buttons_row.addWidget(btn_delete)
-        buttons_row.addWidget(btn_new_intervenant)
         buttons_row.addStretch(1)
         layout.addLayout(buttons_row)
 
@@ -226,11 +221,3 @@ class ReunionsWindow(QMainWindow):
         if reponse == QMessageBox.StandardButton.Yes:
             reunion_service.delete(reunion.id)
             self.refresh()
-
-    def _on_new_intervenant(self) -> None:
-        dialog = IntervenantCreateDialog(self)
-        if dialog.exec() == QDialog.DialogCode.Accepted and dialog.result_intervenant is not None:
-            QMessageBox.information(
-                self, "Intervenant ajouté",
-                f"{dialog.result_intervenant.libelle} a été ajouté à l'annuaire.",
-            )
