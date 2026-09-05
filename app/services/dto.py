@@ -86,6 +86,22 @@ class JournalEntryDTO:
 
 
 @dataclass
+class TypeBilanDTO:
+    id: int
+    libelle: str
+
+
+@dataclass
+class BilanDTO:
+    id: int
+    patient_id: int
+    date: date
+    type_bilan: TypeBilanDTO | None
+    document: str | None
+    note: str
+
+
+@dataclass
 class ReunionDTO:
     id: int
     date: date

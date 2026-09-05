@@ -2,11 +2,13 @@ from datetime import date
 
 from db.model import StatutObjectif
 from services import (
+    bilan_service,
     intervenant_service,
     journal_service,
     objectifs_service,
     patient_service,
     reunion_service,
+    type_bilan_service,
 )
 
 
@@ -72,15 +74,39 @@ def test_objectifs_statuts_grand_et_petit():
     assert grands[0].petits_objectifs[0].statut == StatutObjectif.ATTEINT
 
 
-def test_journal_coordinations_bilans_notes_isoles():
+def test_journal_coordinations_et_notes_isoles():
     patient = patient_service.create("D", "D")
     journal_service.add_entry("coordinations", patient.id, date(2024, 1, 1), "Coordination 1")
-    journal_service.add_entry("bilans", patient.id, date(2024, 2, 1), "Bilan 1")
     journal_service.add_entry("notes", patient.id, date(2024, 3, 1), "Note 1")
 
     assert len(journal_service.list_for_patient("coordinations", patient.id)) == 1
-    assert len(journal_service.list_for_patient("bilans", patient.id)) == 1
     assert len(journal_service.list_for_patient("notes", patient.id)) == 1
+
+
+def test_type_bilan_crud_et_bilan_avec_type_et_document():
+    patient = patient_service.create("F", "F")
+    type_initial = type_bilan_service.create("Bilan initial")
+    type_bilan_service.create("Bilan de renouvellement")
+    assert len(type_bilan_service.list_all()) == 2
+
+    bilan = bilan_service.add_entry(
+        patient.id, date(2024, 6, 15),
+        type_bilan_id=type_initial.id, document="Compte-rendu.pdf (résumé texte)",
+        note="Retard modéré, bonne coopération.",
+    )
+    assert bilan.type_bilan.libelle == "Bilan initial"
+    assert bilan.document == "Compte-rendu.pdf (résumé texte)"
+
+    # Renommer le type se répercute sur le bilan
+    type_bilan_service.update(type_initial.id, "Bilan initial (renommé)")
+    reloaded = bilan_service.list_for_patient(patient.id)[0]
+    assert reloaded.type_bilan.libelle == "Bilan initial (renommé)"
+
+    # Supprimer le type ne supprime pas le bilan, il perd juste son type
+    type_bilan_service.delete(type_initial.id)
+    reloaded = bilan_service.list_for_patient(patient.id)[0]
+    assert reloaded.type_bilan is None
+    assert reloaded.note == "Retard modéré, bonne coopération."
 
 
 def test_reunion_participants_et_patients_concernes():

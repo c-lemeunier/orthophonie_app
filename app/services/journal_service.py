@@ -1,18 +1,20 @@
-"""CRUD générique pour les 3 tables (date, note) : coordinations, bilans, notes."""
+"""CRUD générique pour les tables (date, note) : coordinations, notes.
+
+Les bilans ont désormais une structure propre (type, document) et sont gérés
+par `services/bilan_service.py`, pas par ce module générique."""
 from __future__ import annotations
 
 from datetime import date as date_type
 from typing import Literal
 
 from db.database import session_scope
-from db.model import Bilan, Coordination, Note
+from db.model import Coordination, Note
 from services.dto import JournalEntryDTO
 
-JournalKind = Literal["coordinations", "bilans", "notes"]
+JournalKind = Literal["coordinations", "notes"]
 
 _MODELS = {
     "coordinations": Coordination,
-    "bilans": Bilan,
     "notes": Note,
 }
 

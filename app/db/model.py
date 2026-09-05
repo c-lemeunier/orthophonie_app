@@ -183,13 +183,32 @@ class Coordination(_DatedNoteMixin, Base):
     patient: Mapped["Patient"] = relationship(back_populates="coordinations")
 
 
+class TypeBilan(Base):
+    """Annuaire des types de bilan, géré par l'utilisateur (ajout, renommage,
+    suppression) — propre aux bilans, pas partagé ailleurs."""
+
+    __tablename__ = "type_bilans"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    libelle: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    bilans: Mapped[list["Bilan"]] = relationship(back_populates="type_bilan")
+
+
 class Bilan(_DatedNoteMixin, Base):
     __tablename__ = "bilans"
 
     patient_id: Mapped[int] = mapped_column(
         ForeignKey("patients.id", ondelete="CASCADE"), nullable=False
     )
+    type_bilan_id: Mapped[int | None] = mapped_column(
+        ForeignKey("type_bilans.id", ondelete="SET NULL"), nullable=True
+    )
+    document: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     patient: Mapped["Patient"] = relationship(back_populates="bilans")
+    type_bilan: Mapped["TypeBilan | None"] = relationship(back_populates="bilans")
 
 
 class Note(_DatedNoteMixin, Base):
