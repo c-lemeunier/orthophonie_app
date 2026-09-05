@@ -117,6 +117,7 @@ class ReunionsWindow(QMainWindow):
         super().__init__(parent)
         self.setWindowTitle("Réunions équipe / synthèses")
         self.resize(900, 500)
+        self.setMinimumSize(600, 350)
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -143,12 +144,13 @@ class ReunionsWindow(QMainWindow):
         self._table.setWordWrap(True)
 
         header = self._table.horizontalHeader()
-        # Date et Type : juste la place nécessaire à leur contenu, pas plus.
+        # Date, Type, Participants, Patients : juste la place nécessaire à leur
+        # contenu. Seule Note s'étire pour occuper tout le reste de la largeur
+        # (et donc tout l'espace gagné quand on agrandit la fenêtre).
         header.setSectionResizeMode(_COL_DATE, QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(_COL_TYPE, QHeaderView.ResizeMode.ResizeToContents)
-        # Participants / Patients / Note se partagent le reste de la largeur.
-        header.setSectionResizeMode(_COL_PARTICIPANTS, QHeaderView.ResizeMode.Stretch)
-        header.setSectionResizeMode(_COL_PATIENTS, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(_COL_PARTICIPANTS, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(_COL_PATIENTS, QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(_COL_NOTE, QHeaderView.ResizeMode.Stretch)
         # Le retour à la ligne dépend de la largeur des colonnes : recalculer
         # la hauteur des lignes à chaque redimensionnement d'une colonne (donc
