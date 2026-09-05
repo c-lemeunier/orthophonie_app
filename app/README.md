@@ -75,7 +75,7 @@ Windows. Deux options :
    & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
    ```
 
-Avant de builder, ajoutez `resources/icon.ico` (voir `resources/README.md`).
+Une icône par défaut est fournie dans `resources/` . Remplacez-la par votre propre visuel quand vous voulez (voir `resources/README.md`).
 
 ## Structure
 
