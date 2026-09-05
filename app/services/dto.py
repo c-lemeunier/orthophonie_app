@@ -97,7 +97,7 @@ class BilanDTO:
     patient_id: int
     date: date
     type_bilan: TypeBilanDTO | None
-    document: str | None
+    document_path: str | None
     note: str
 
 

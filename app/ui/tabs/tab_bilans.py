@@ -24,6 +24,7 @@ from services.dto import BilanDTO
 from ui import theme
 from ui.tabs.base_tab import PatientTabWidget
 from ui.type_bilan_dialog import TypeBilanManagerDialog
+from ui.widgets.document_drop_field import DocumentDropField, document_link_html, open_document
 from ui.widgets.searchable_combo_box import SearchableComboBox
 
 _ACCENT = theme.TAB_ACCENTS["bilans"]
@@ -61,9 +62,8 @@ class _BilanFormDialog(QDialog):
         self._reload_types(selected_id=bilan.type_bilan.id if bilan and bilan.type_bilan else None)
 
         layout.addWidget(QLabel("Document :"))
-        self._document_edit = QTextEdit()
-        self._document_edit.setPlainText(bilan.document if bilan and bilan.document else "")
-        layout.addWidget(self._document_edit)
+        self._document_field = DocumentDropField(bilan.document_path if bilan else None)
+        layout.addWidget(self._document_field)
 
         layout.addWidget(QLabel("Note :"))
         self._note_edit = QTextEdit()
@@ -93,7 +93,7 @@ class _BilanFormDialog(QDialog):
         return {
             "entry_date": self._date_edit.date().toPython(),
             "type_bilan_id": self._type_combo.current_data(),
-            "document": self._document_edit.toPlainText().strip() or None,
+            "document_path": self._document_field.path(),
             "note": self._note_edit.toPlainText().strip(),
         }
 
@@ -123,11 +123,10 @@ class _BilanCard(QFrame):
         header_row.addStretch(1)
         layout.addLayout(header_row)
 
-        if bilan.document:
+        if bilan.document_path:
             layout.addWidget(self._make_field_label("Document :"))
-            document_label = QLabel(bilan.document)
-            document_label.setWordWrap(True)
-            document_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+            document_label = QLabel(document_link_html(bilan.document_path))
+            document_label.linkActivated.connect(lambda _href: open_document(bilan.document_path, self))
             layout.addWidget(document_label)
 
         layout.addWidget(self._make_field_label("Note :"))

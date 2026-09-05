@@ -91,11 +91,11 @@ def test_type_bilan_crud_et_bilan_avec_type_et_document():
 
     bilan = bilan_service.add_entry(
         patient.id, date(2024, 6, 15),
-        type_bilan_id=type_initial.id, document="Compte-rendu.pdf (résumé texte)",
+        type_bilan_id=type_initial.id, document_path="/tmp/compte-rendu.pdf",
         note="Retard modéré, bonne coopération.",
     )
     assert bilan.type_bilan.libelle == "Bilan initial"
-    assert bilan.document == "Compte-rendu.pdf (résumé texte)"
+    assert bilan.document_path == "/tmp/compte-rendu.pdf"
 
     # Renommer le type se répercute sur le bilan
     type_bilan_service.update(type_initial.id, "Bilan initial (renommé)")

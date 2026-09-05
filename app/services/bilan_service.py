@@ -1,4 +1,8 @@
-"""CRUD des bilans (date, type, document, note)."""
+"""CRUD des bilans (date, type, document joint, note).
+
+Le document joint n'est qu'une RÉFÉRENCE de chemin (colonne `document` en
+base, réutilisée telle quelle — pas de migration nécessaire), pas une copie :
+si le fichier est déplacé ou supprimé, le lien ne s'ouvre plus."""
 from __future__ import annotations
 
 from datetime import date as date_type
@@ -15,7 +19,7 @@ def to_dto(bilan: Bilan) -> BilanDTO:
         patient_id=bilan.patient_id,
         date=bilan.date,
         type_bilan=type_bilan_to_dto(bilan.type_bilan) if bilan.type_bilan_id else None,
-        document=bilan.document,
+        document_path=bilan.document,
         note=bilan.note,
     )
 
@@ -36,7 +40,7 @@ def add_entry(
     entry_date: date_type,
     *,
     type_bilan_id: int | None,
-    document: str | None,
+    document_path: str | None,
     note: str,
 ) -> BilanDTO:
     with session_scope() as session:
@@ -44,7 +48,7 @@ def add_entry(
             patient_id=patient_id,
             date=entry_date,
             type_bilan_id=type_bilan_id,
-            document=document,
+            document=document_path,
             note=note.strip(),
         )
         session.add(bilan)
@@ -57,7 +61,7 @@ def update_entry(
     *,
     entry_date: date_type,
     type_bilan_id: int | None,
-    document: str | None,
+    document_path: str | None,
     note: str,
 ) -> None:
     with session_scope() as session:
@@ -66,7 +70,7 @@ def update_entry(
             raise ValueError(f"Bilan {bilan_id} introuvable")
         bilan.date = entry_date
         bilan.type_bilan_id = type_bilan_id
-        bilan.document = document
+        bilan.document = document_path
         bilan.note = note.strip()
 
 

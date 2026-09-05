@@ -205,6 +205,9 @@ class Bilan(_DatedNoteMixin, Base):
     type_bilan_id: Mapped[int | None] = mapped_column(
         ForeignKey("type_bilans.id", ondelete="SET NULL"), nullable=True
     )
+    # Chemin vers un document joint (référence, pas une copie) — le nom de
+    # colonne est resté `document` pour éviter une migration, mais il
+    # contient un chemin de fichier, pas du texte libre (voir bilan_service).
     document: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     patient: Mapped["Patient"] = relationship(back_populates="bilans")
