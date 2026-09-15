@@ -19,7 +19,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
     QScrollArea,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -29,6 +28,7 @@ from services.dto import JournalEntryDTO
 from services.journal_service import JournalKind
 from ui import theme
 from ui.tabs.base_tab import PatientTabWidget
+from ui.widgets.plain_text_edit import PlainTextEdit
 
 
 class _EntryFormDialog(QDialog):
@@ -44,7 +44,7 @@ class _EntryFormDialog(QDialog):
         self._date_edit.setDate(entry_date if entry_date else date.today())
         layout.addWidget(self._date_edit)
 
-        self._note_edit = QTextEdit()
+        self._note_edit = PlainTextEdit()
         self._note_edit.setPlainText(note)
         layout.addWidget(self._note_edit)
 

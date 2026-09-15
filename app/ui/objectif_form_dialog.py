@@ -7,13 +7,13 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QFormLayout,
     QMessageBox,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
 
 from db.model import StatutObjectif
 from ui.style_constants import STATUT_LABELS
+from ui.widgets.plain_text_edit import PlainTextEdit
 
 
 class ObjectifFormDialog(QDialog):
@@ -31,7 +31,7 @@ class ObjectifFormDialog(QDialog):
         layout = QVBoxLayout(self)
         form = QFormLayout()
 
-        self._libelle = QTextEdit()
+        self._libelle = PlainTextEdit()
         self._libelle.setPlainText(libelle)
         self._libelle.setFixedHeight(80)
         form.addRow("Libellé :", self._libelle)

@@ -10,7 +10,6 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPushButton,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -20,6 +19,7 @@ from services import patient_service
 from services.dto import compute_age
 from ui import theme
 from ui.tabs.base_tab import PatientTabWidget
+from ui.widgets.plain_text_edit import PlainTextEdit
 from ui.widgets.searchable_combo_box import SearchableComboBox
 
 
@@ -52,7 +52,7 @@ class TabInfos(PatientTabWidget):
         self._date_debut.setDisplayFormat("dd/MM/yyyy")
         self._date_debut.setDate(date.today())
         self._classe = QLineEdit()
-        self._diagnostic = QTextEdit()
+        self._diagnostic = PlainTextEdit()
         self._frequence = SearchableComboBox()
         self._frequence.set_items([(f, f) for f in SUGGESTIONS_FREQUENCE])
         self._frequence.setEditable(True)

@@ -14,7 +14,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
     QScrollArea,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -25,6 +24,7 @@ from ui import theme
 from ui.tabs.base_tab import PatientTabWidget
 from ui.type_bilan_dialog import TypeBilanManagerDialog
 from ui.widgets.document_drop_field import DocumentDropField, document_link_html, open_document
+from ui.widgets.plain_text_edit import PlainTextEdit
 from ui.widgets.searchable_combo_box import SearchableComboBox
 
 _ACCENT = theme.TAB_ACCENTS["bilans"]
@@ -66,7 +66,7 @@ class _BilanFormDialog(QDialog):
         layout.addWidget(self._document_field)
 
         layout.addWidget(QLabel("Note :"))
-        self._note_edit = QTextEdit()
+        self._note_edit = PlainTextEdit()
         self._note_edit.setPlainText(bilan.note if bilan else "")
         layout.addWidget(self._note_edit)
 

@@ -16,7 +16,6 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QMessageBox,
     QPushButton,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -26,6 +25,7 @@ from services.dto import ReunionDTO
 from ui import theme
 from ui.intervenant_form_dialog import IntervenantCreateDialog
 from ui.type_reunion_dialog import TypeReunionManagerDialog
+from ui.widgets.plain_text_edit import PlainTextEdit
 from ui.widgets.searchable_combo_box import SearchableComboBox
 
 
@@ -88,7 +88,7 @@ class ReunionFormDialog(QDialog):
         layout.addLayout(lists_row)
 
         layout.addWidget(QLabel("Note :"))
-        self._note_edit = QTextEdit()
+        self._note_edit = PlainTextEdit()
         self._note_edit.setPlainText(reunion.note or "" if reunion else "")
         layout.addWidget(self._note_edit)
 
