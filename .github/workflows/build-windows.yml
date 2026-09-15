@@ -33,9 +33,21 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup --no-progress -y
 
+      - name: Determine version
+        id: version
+        shell: pwsh
+        run: |
+          $ref = "${{ github.ref_name }}"
+          if ($ref -match '^prod-v(.+)$') {
+            $version = $Matches[1]
+          } else {
+            $version = "0.0.0-dev"
+          }
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+
       - name: Build installer (Inno Setup)
         run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=${{ steps.version.outputs.version }} installer.iss
 
       - name: Upload onedir build
         uses: actions/upload-artifact@v4

@@ -3,7 +3,9 @@
 ; doit exister), avec ISCC installer.iss (depuis le dossier app\).
 
 #define MyAppName "OrthophonieApp"
-#define MyAppVersion "1.0.0"
+#ifndef MyAppVersion
+  #define MyAppVersion "1.0.0"
+#endif
 #define MyAppPublisher "Cabinet d'orthophonie"
 #define MyAppExeName "OrthophonieApp.exe"
 
