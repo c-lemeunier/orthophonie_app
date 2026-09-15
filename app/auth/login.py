@@ -90,8 +90,8 @@ class LoginDialog(QDialog):
     def _on_setup_submit(self) -> None:
         pw1 = self._setup_pw1.text()
         pw2 = self._setup_pw2.text()
-        if len(pw1) < 8:
-            self._setup_error.setText("Le mot de passe doit contenir au moins 8 caractères.")
+        if len(pw1) < 4:
+            self._setup_error.setText("Le mot de passe doit contenir au moins 4 caractères.")
             return
         if pw1 != pw2:
             self._setup_error.setText("Les deux mots de passe ne correspondent pas.")
@@ -238,8 +238,8 @@ class LoginDialog(QDialog):
         result = {"password": "", "ok": False}
 
         def on_accept() -> None:
-            if len(pw1.text()) < 8:
-                error.setText("Le mot de passe doit contenir au moins 8 caractères.")
+            if len(pw1.text()) < 4:
+                error.setText("Le mot de passe doit contenir au moins 4 caractères.")
                 return
             if pw1.text() != pw2.text():
                 error.setText("Les deux mots de passe ne correspondent pas.")
