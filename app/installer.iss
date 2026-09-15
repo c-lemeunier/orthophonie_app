@@ -6,7 +6,7 @@
 #ifndef MyAppVersion
   #define MyAppVersion "1.0.0"
 #endif
-#define MyAppPublisher "Cabinet d'orthophonie"
+#define MyAppPublisher "Clément Lemeunier"
 #define MyAppExeName "OrthophonieApp.exe"
 
 [Setup]
@@ -14,6 +14,7 @@ AppId={{8F2B6B0E-6C1A-4B7E-9C1E-4E7B8B5D9A21}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
+VersionInfoCompany={#MyAppPublisher}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
