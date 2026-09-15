@@ -265,9 +265,8 @@ class TabBilans(PatientTabWidget):
         dialog = _BilanFormDialog("Ajouter un bilan", parent=self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             values = dialog.values()
-            if values["note"]:
-                bilan_service.add_entry(self.patient_id, values.pop("entry_date"), **values)
-                self.refresh()
+            bilan_service.add_entry(self.patient_id, values.pop("entry_date"), **values)
+            self.refresh()
 
     def _on_edit(self) -> None:
         if self._selected_entry_id is None:
@@ -278,9 +277,8 @@ class TabBilans(PatientTabWidget):
         dialog = _BilanFormDialog("Modifier le bilan", bilan=bilan, parent=self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             values = dialog.values()
-            if values["note"]:
-                bilan_service.update_entry(bilan.id, **values)
-                self.refresh()
+            bilan_service.update_entry(bilan.id, **values)
+            self.refresh()
 
     def _on_delete(self) -> None:
         if self._selected_entry_id is None:
