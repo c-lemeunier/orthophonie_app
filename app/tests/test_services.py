@@ -1,3 +1,4 @@
+import os
 from datetime import date
 
 from db.model import StatutObjectif
@@ -108,6 +109,22 @@ def test_type_bilan_crud_et_bilan_avec_type_et_document():
     reloaded = bilan_service.list_for_patient(patient.id)[0]
     assert reloaded.type_bilan is None
     assert reloaded.note == "Retard modéré, bonne coopération."
+
+
+def test_bilan_document_path_normalise_et_relocalise():
+    patient = patient_service.create("G", "G")
+    bilan = bilan_service.add_entry(
+        patient.id, date(2024, 6, 15),
+        type_bilan_id=None, document_path='  "/tmp/dos pat//compte rendu.pdf"  ', note="",
+    )
+    assert bilan.document_path == os.path.normpath("/tmp/dos pat/compte rendu.pdf")
+
+    bilan_service.set_document_path(bilan.id, "/tmp/ailleurs/compte rendu.pdf")
+    reloaded = bilan_service.list_for_patient(patient.id)[0]
+    assert reloaded.document_path == os.path.normpath("/tmp/ailleurs/compte rendu.pdf")
+
+    bilan_service.set_document_path(bilan.id, None)
+    assert bilan_service.list_for_patient(patient.id)[0].document_path is None
 
 
 def test_reunion_participants_et_patients_concernes():

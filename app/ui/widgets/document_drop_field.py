@@ -3,17 +3,32 @@ Parcourir, affichage en lien cliquable qui l'ouvre avec l'application par
 défaut du système (Sumatra pour un PDF, etc. — géré par l'OS, pas par nous).
 
 On ne stocke qu'un CHEMIN vers le fichier (pas de copie, pas de chiffrement
-du contenu) : si le fichier est déplacé ou supprimé, le lien ne s'ouvre plus.
+du contenu). Le chemin est résolu via `services.document_resolver` (redirection
+OneDrive du Bureau/Documents, changement de profil…) ; s'il reste introuvable,
+un lien « Relocaliser… » permet de re-sélectionner le fichier.
 """
 from __future__ import annotations
 
+from html import escape
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QUrl, Signal
 from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import QFileDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
+from services import document_resolver
 from ui import theme
+
+HREF_OPEN = "open"
+HREF_RELINK = "relink"
 
 _STYLE_EMPTY = f"""
     QLabel {{
@@ -45,18 +60,54 @@ _STYLE_FILLED = f"""
 
 def document_link_html(document_path: str | None) -> str:
     """HTML pour un lien cliquable vers `document_path` (utilisé aussi par la
-    carte de résumé d'un bilan). Retourne une chaîne vide si pas de document."""
+    carte de résumé d'un bilan). Retourne une chaîne vide si pas de document.
+    Si le fichier est introuvable, propose un lien « Relocaliser… »."""
     if not document_path:
         return ""
-    name = Path(document_path).name
-    if Path(document_path).exists():
-        return f'📎 <a href="open" style="color:{theme.SELECTION};">{name}</a>'
-    return f'📎 {name} <span style="color:{theme.TEXT_DARK};">(fichier introuvable)</span>'
+    resolved = document_resolver.resolve(document_path)
+    if resolved is not None:
+        return f'📎 <a href="{HREF_OPEN}" style="color:{theme.SELECTION};">{escape(resolved.name)}</a>'
+    name = escape(Path(document_resolver.normalize(document_path) or document_path).name)
+    return (
+        f'📎 {name} <span style="color:{theme.TEXT_DARK};">(fichier introuvable)</span> '
+        f'<a href="{HREF_RELINK}" style="color:{theme.SELECTION};">Relocaliser…</a>'
+    )
+
+
+def document_tooltip(document_path: str | None) -> str:
+    """Chemin complet enregistré (diagnostic) et, si différent, celui utilisé."""
+    if not document_path:
+        return ""
+    resolved = document_resolver.resolve(document_path)
+    tooltip = f"Chemin enregistré : {document_path}"
+    if resolved is None:
+        tooltip += "\nFichier introuvable à cet emplacement."
+    elif str(resolved) != document_resolver.normalize(document_path):
+        tooltip += f"\nRetrouvé ici : {resolved}"
+    return tooltip
 
 
 def open_document(document_path: str | None, parent: QWidget | None = None) -> None:
-    if document_path and Path(document_path).exists():
-        QDesktopServices.openUrl(QUrl.fromLocalFile(document_path))
+    if not document_path:
+        return
+    resolved = document_resolver.resolve(document_path)
+    if resolved is None:
+        QMessageBox.warning(parent, "Document introuvable", f"Fichier introuvable :\n{document_path}")
+        return
+    if not QDesktopServices.openUrl(QUrl.fromLocalFile(str(resolved))):
+        QMessageBox.warning(
+            parent,
+            "Ouverture impossible",
+            f"Impossible d'ouvrir le document avec l'application par défaut :\n{resolved}",
+        )
+
+
+def choose_document(parent: QWidget | None, current_path: str | None = None) -> str | None:
+    """Sélecteur de fichier ouvert au dossier existant le plus proche du
+    chemin actuel. Retourne le chemin choisi ou None."""
+    start_dir = document_resolver.closest_existing_dir(current_path)
+    path, _ = QFileDialog.getOpenFileName(parent, "Choisir un document", start_dir)
+    return path or None
 
 
 class _DropLabel(QLabel):
@@ -133,23 +184,28 @@ class DocumentDropField(QWidget):
     def _refresh_display(self) -> None:
         if self._path:
             self._drop_label.setText(document_link_html(self._path))
+            self._drop_label.setToolTip(document_tooltip(self._path))
             self._drop_label.setProperty("hasDocument", True)
             self._drop_label.setStyleSheet(_STYLE_FILLED)
         else:
+            self._drop_label.setToolTip("")
             self._drop_label.setText("📄  Glissez un fichier ici, ou cliquez sur « Parcourir »")
             self._drop_label.setProperty("hasDocument", False)
             self._drop_label.setStyleSheet(_STYLE_EMPTY)
         self._remove_btn.setEnabled(self._path is not None)
 
-    def _on_link_clicked(self, _href: str) -> None:
-        open_document(self._path, self)
+    def _on_link_clicked(self, href: str) -> None:
+        if href == HREF_RELINK:
+            self._on_browse()
+        else:
+            open_document(self._path, self)
 
     def _on_file_dropped(self, path: str) -> None:
         self.set_path(path)
         self.path_changed.emit()
 
     def _on_browse(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(self, "Choisir un document")
+        path = choose_document(self, self._path)
         if path:
             self.set_path(path)
             self.path_changed.emit()

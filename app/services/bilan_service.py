@@ -9,6 +9,7 @@ from datetime import date as date_type
 
 from db.database import session_scope
 from db.model import Bilan
+from services import document_resolver
 from services.dto import BilanDTO
 from services.type_bilan_service import to_dto as type_bilan_to_dto
 
@@ -48,7 +49,7 @@ def add_entry(
             patient_id=patient_id,
             date=entry_date,
             type_bilan_id=type_bilan_id,
-            document=document_path,
+            document=document_resolver.normalize(document_path),
             note=note.strip(),
         )
         session.add(bilan)
@@ -70,8 +71,18 @@ def update_entry(
             raise ValueError(f"Bilan {bilan_id} introuvable")
         bilan.date = entry_date
         bilan.type_bilan_id = type_bilan_id
-        bilan.document = document_path
+        bilan.document = document_resolver.normalize(document_path)
         bilan.note = note.strip()
+
+
+def set_document_path(bilan_id: int, document_path: str | None) -> None:
+    """Met à jour uniquement le document joint (relocalisation / réparation
+    automatique d'un chemin devenu invalide)."""
+    with session_scope() as session:
+        bilan = session.get(Bilan, bilan_id)
+        if bilan is None:
+            raise ValueError(f"Bilan {bilan_id} introuvable")
+        bilan.document = document_resolver.normalize(document_path)
 
 
 def delete_entry(bilan_id: int) -> None:
