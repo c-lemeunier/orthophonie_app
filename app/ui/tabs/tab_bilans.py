@@ -1,5 +1,6 @@
 """Onglet Derniers bilans : date, type (annuaire géré par l'utilisateur),
-document (texte) et note, chaque bilan affiché en entier sur une carte."""
+document joint (référence vers le fichier) et note, chaque bilan affiché en
+entier sur une carte."""
 from __future__ import annotations
 
 from datetime import date
@@ -18,12 +19,19 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from services import bilan_service, type_bilan_service
+from services import bilan_service, document_resolver, type_bilan_service
 from services.dto import BilanDTO
 from ui import theme
 from ui.tabs.base_tab import PatientTabWidget
 from ui.type_bilan_dialog import TypeBilanManagerDialog
-from ui.widgets.document_drop_field import DocumentDropField, document_link_html, open_document
+from ui.widgets.document_drop_field import (
+    HREF_RELINK,
+    DocumentDropField,
+    choose_document,
+    document_link_html,
+    document_tooltip,
+    open_document,
+)
 from ui.widgets.plain_text_edit import PlainTextEdit
 from ui.widgets.searchable_combo_box import SearchableComboBox
 
@@ -100,6 +108,7 @@ class _BilanFormDialog(QDialog):
 
 class _BilanCard(QFrame):
     clicked = Signal(int)
+    document_changed = Signal()
 
     def __init__(self, bilan: BilanDTO, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -124,9 +133,11 @@ class _BilanCard(QFrame):
         layout.addLayout(header_row)
 
         if bilan.document_path:
+            self._heal_document_path(bilan)
             layout.addWidget(self._make_field_label("Document :"))
             document_label = QLabel(document_link_html(bilan.document_path))
-            document_label.linkActivated.connect(lambda _href: open_document(bilan.document_path, self))
+            document_label.setToolTip(document_tooltip(bilan.document_path))
+            document_label.linkActivated.connect(lambda href: self._on_document_link(href, bilan))
             layout.addWidget(document_label)
 
         layout.addWidget(self._make_field_label("Note :"))
@@ -136,6 +147,24 @@ class _BilanCard(QFrame):
         layout.addWidget(note_label)
 
         self.set_selected(False)
+
+    @staticmethod
+    def _heal_document_path(bilan: BilanDTO) -> None:
+        """Si le fichier a été retrouvé ailleurs (redirection OneDrive, autre
+        profil…), enregistre le nouveau chemin pour les prochains affichages."""
+        resolved = document_resolver.resolve(bilan.document_path)
+        if resolved is not None and str(resolved) != document_resolver.normalize(bilan.document_path):
+            bilan_service.set_document_path(bilan.id, str(resolved))
+            bilan.document_path = str(resolved)
+
+    def _on_document_link(self, href: str, bilan: BilanDTO) -> None:
+        if href == HREF_RELINK:
+            path = choose_document(self, bilan.document_path)
+            if path:
+                bilan_service.set_document_path(bilan.id, path)
+                self.document_changed.emit()
+        else:
+            open_document(bilan.document_path, self)
 
     @staticmethod
     def _make_field_label(text: str) -> QLabel:
@@ -236,6 +265,7 @@ class TabBilans(PatientTabWidget):
         for bilan in bilans:
             card = _BilanCard(bilan)
             card.clicked.connect(self._on_card_clicked)
+            card.document_changed.connect(self.refresh)
             card.set_selected(bilan.id == self._selected_entry_id)
             self._cards_layout.insertWidget(self._cards_layout.count() - 1, card)
             self._cards.append(card)
